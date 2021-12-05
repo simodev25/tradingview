@@ -420,7 +420,7 @@ if long
     tradePositionSize := temp_positionSize
     close_alert = 'e=' + broker + ' s=' + pair + ' c=position'
     // Generate AutoView alert syntax
-    av_alert = close_alert + '\n' +  'e=' + broker + ' b=long' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)
+    av_alert = close_alert + '\n' +  'e=' + broker + ' b=long' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)+ ' fsl=' + str.tostring(tradeTargetPrice)
     // Send alert to webhook
     alert(message=av_alert, freq=alert.freq_once_per_bar_close)
 // Make a label and get its price coordinate
@@ -453,7 +453,7 @@ if exitLong or exitShort
    // Send alert to webhook
     alert(message=close_alert, freq=alert.freq_once_per_bar_close)   
 
-plot(t_direction !=0 ? tradeStopPrice :na , title='Up Trend', style=plot.style_linebr, linewidth=2, color=t_direction == 1 ? color.new(color.green , 0) :color.new(color.red , 0) )
+//plot(t_direction !=0 ? tradeStopPrice :na , title='Up Trend', style=plot.style_linebr, linewidth=2, color=t_direction == 1 ? color.new(color.green , 0) :color.new(color.red , 0) )
 
 plotshape(short ? dn : na, title='DownTrend Begins', location=location.absolute, style=shape.circle, size=size.tiny, color=color.new(color.red, 0))
 plotshape(short  ? dn : na, title='Sell', text='Sell', location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.new(color.red, 0), textcolor=color.new(color.white, 0))
@@ -462,8 +462,8 @@ plotshape(long ? up : na, title='UpTrend Begins', location=location.absolute, st
 plotshape(long ? up : na, title='Buy', text='Buy', location=location.absolute, style=shape.labelup, size=size.tiny, color=color.new(color.green, 0), textcolor=color.new(color.white, 0))
 
 strategy.entry(id='Long', direction=strategy.long, when=long, qty=tradePositionSize ,comment='Long entre')
-strategy.exit(id='Long Exit', from_entry='Long', limit=tradeTargetPrice ,stop=tradeStopPrice,when=exitLong,comment='Long exit'+str.tostring(tradeStopPrice) )
+strategy.exit(id='Long Exit', from_entry='Long', profit=tradeTargetPrice ,stop=tradeStopPrice,when=exitLong,comment='Long exit'+str.tostring(tradeStopPrice) )
 
 // Enter trades whenever a valid setorderup is detected
 strategy.entry(id='short', direction=strategy.short, when=short ,qty=tradePositionSize,comment='short entre')
-strategy.exit(id='short Exit', from_entry='short',limit=tradeTargetPrice, stop=tradeStopPrice ,when=exitShort,comment='short exit'+str.tostring(tradeStopPrice))
+strategy.exit(id='short Exit', from_entry='short',profit=tradeTargetPrice, stop=tradeStopPrice ,when=exitShort,comment='short exit'+str.tostring(tradeStopPrice))
