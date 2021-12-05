@@ -3,31 +3,28 @@ strategy('kosmosv3', overlay=true, initial_capital=1000, default_qty_value=10, d
 
 var g_av = 'AutoView Oanda Settings'
 var g_risk = 'Risk Settings'
-oandaDemo = input.bool(title='Use Oanda Demo?', defval=false, tooltip='If turned on then oandapractice broker prefix will be used for AutoView alerts (demo account). If turned off then live account will be used', group='AutoView Oanda Settings')
+oandaDemo = true//input.bool(title='Use Oanda Demo?', defval=false, tooltip='If turned on then oandapractice broker prefix will be used for AutoView alerts (demo account). If turned off then live account will be used', group='AutoView Oanda Settings')
 accountBalance = input.float(title='Account Balance', defval=1000.0, step=100, tooltip='Your account balance (used for calculating position size)', group=g_av)
 rr = input.float(title='Risk:Reward', defval=1.0, group=g_risk, tooltip='This determines the risk:reward profile of the setup')
 pips = input.float(title='Stop Pips', defval=2.0, group=g_risk, tooltip='How many pips above high to put stop loss')
 riskPerTrade = input.float(title='Risk Per Trade %', defval=2.0, step=0.5, tooltip='Your risk per trade as a % of your account balance', group=g_av)
 accountCurrency = input.string(title='Account Currency', defval='USD', options=['AUD', 'CAD', 'CHF', 'EUR', 'GBP', 'JPY', 'NZD', 'USD'], tooltip='Your account balance currency (used for calculating position size)', group='AutoView Oanda Settings')
-limitOrder = input.bool(title='Use Limit Order?', defval=true, tooltip='If turned on then AutoView will use limit orders. If turned off then market orders will be used', group='AutoView Oanda Settings')
-gtdOrder = input.int(title='Days To Leave Limit Order', minval=0, defval=2, tooltip='This is your GTD setting (good til day)', group='AutoView Oanda Settings')
+limitOrder =false// input.bool(title='Use Limit Order?', defval=true, tooltip='If turned on then AutoView will use limit orders. If turned off then market orders will be used', group='AutoView Oanda Settings')
+gtdOrder = 2 //input.int(title='Days To Leave Limit Order', minval=0, defval=2, tooltip='This is your GTD setting (good til day)', group='AutoView Oanda Settings')
 
 // Get Strategy Settings
 var g_strategy = 'Strategy Settings'
 stopMultiplier = input.float(title='Stop Loss ATR', defval=1.0, tooltip='Stop loss multiplier (x ATR)', group=g_strategy)
 stopStopLossErr = input.float(title='Stop Loss marge Errr', defval=0.0001, tooltip='Stop Loss marge Errr',step=0.0001, group=g_strategy)
-minProfitLoss=input.float(title='Min ProfitLoss', defval=10, tooltip='Min ProfitLoss', group=g_strategy)
 i_startHour         = input.int(title="Start Date Filter", defval=0, group=g_strategy, tooltip="hour begin trading from")
 i_endHour         = input.int(title="End Date Filter", defval=24, group=g_strategy, tooltip="hour stop trading")
 
 Periods = input(title='ATR Period', defval=10)
 src = input(hl2, title='Source')
 Multiplier = input.float(title='ATR Multiplier', step=0.1, defval=4.0)
-changeATR = input(title='Change ATR Calculation Method ?', defval=true)
-showsignals = input(title='Show Buy/Sell Signals ?', defval=true)
-highlighting = input(title='Highlighter On/Off ?', defval=true)
-barIndex = input(title='Bar index', defval=0)
-var broker = oandaDemo ? 'oandapractice' : 'oandapractice'
+changeATR =true// input(title='Change ATR Calculation Method ?', defval=true)
+barIndex =0// input(title='Bar index', defval=0)
+var broker = oandaDemo ? 'oandapractice' : 'oanda'
 // See if this bar's time happened within date filter
 
 var tradePositionSize = 0.0
@@ -109,18 +106,17 @@ shortStopPrice = high + syminfo.mintick * pips * 10
 shortStopDistance = shortStopPrice - close
 shortTargetPrice = close - shortStopDistance * rr
 mPlot = plot(ohlc4, title='', style=plot.style_circles, linewidth=0)
-longFillColor = highlighting ? trend == 1 ? color.green : color.white : color.white
-shortFillColor = highlighting ? trend == -1 ? color.red : color.white : color.white
-// Save stops & targets for the current trade
 
+// Save stops & targets for the current trade , group=g_ssl)
+var g_ssl = 'SSL Settings'
 /////SSL
-show_Baseline = input(title='Show Baseline', defval=true)
-show_SSL1 = input(title='Show SSL1', defval=false)
-show_atr = input(title='Show ATR bands', defval=true)
-//ATR
-atrlen = input(14, 'ATR Period')
-mult = input.float(1, 'ATR Multi', step=0.1)
-smoothing = input.string(title='ATR Smoothing', defval='WMA', options=['RMA', 'SMA', 'EMA', 'WMA'])
+show_Baseline = true //input(title='Show Baseline', defval=true)
+show_SSL1 = false //input(title='Show SSL1', defval=false)
+show_atr = true //input(title='Show ATR bands', defval=true)
+//ATR 
+atrlen = input(14, 'ATR Period' , group=g_ssl)
+mult = input.float(1, 'ATR Multi', step=0.1 , group=g_ssl)
+smoothing = input.string(title='ATR Smoothing', defval='WMA', options=['RMA', 'SMA', 'EMA', 'WMA'] , group=g_ssl)
 
 ma_function(source, atrlen) =>
     if smoothing == 'RMA'
@@ -155,10 +151,10 @@ tema(src, len) =>
     ema2 = ta.ema(ema1, len)
     ema3 = ta.ema(ema2, len)
     3 * ema1 - 3 * ema2 + ema3
-kidiv = input.int(defval=1, maxval=4, title='Kijun MOD Divider')
+kidiv =1// input.int(defval=1, maxval=4, title='Kijun MOD Divider')
 
-jurik_phase = input(title='* Jurik (JMA) Only - Phase', defval=3)
-jurik_power = input(title='* Jurik (JMA) Only - Power', defval=1)
+jurik_phase =3 //input(title='* Jurik (JMA) Only - Phase', defval=3)
+jurik_power =1 //input(title='* Jurik (JMA) Only - Power', defval=1)
 volatility_lookback = input(10, title='* Volatility Adjusted (VAMA) Only - Volatility lookback length')
 //MF
 beta = input.float(0.8, minval=0, maxval=1, step=0.1, title='Modular Filter, General Filter Only - Beta')
@@ -315,7 +311,7 @@ ExitLow = ma(SSL3Type, low, len3)
 
 ///Keltner Baseline Channel
 BBMC = ma(maType, close, len)
-useTrueRange = input(true)
+useTrueRange =true// input(true)
 multy = input.float(0.2, step=0.05, title='Base Channel Multiplier')
 Keltma = ma(maType, src, len)
 range_1 = useTrueRange ? ta.tr : high - low
@@ -352,7 +348,7 @@ base_cross_Short = ta.crossover(sslExit, close)
 codiff = base_cross_Long ? 1 : base_cross_Short ? -1 : na
 
 //COLORS
-show_color_bar = input(title='Color Bars', defval=true)
+show_color_bar =true// input(title='Color Bars', defval=true)
 color_bar = close > upperk ? #00c3ff : close < lowerk ? #ff0062 : color.gray
 color_ssl1 = close > sslDown ? #00c3ff : close < sslDown ? #ff0062 : na
 
