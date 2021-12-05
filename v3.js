@@ -1,13 +1,5 @@
 //@version=5
 strategy('kosmosv3', overlay=true, initial_capital=1000, default_qty_value=10, default_qty_type=strategy.percent_of_equity)
-f_print(_text) =>
-    // Create label on the first bar.
-    var _label = label.new(bar_index, na, _text, xloc.bar_index, yloc.price, color(na), label.style_none, color.gray, size.large, text.align_left)
-    // On next bars, update the label's x and y position, and the text it displays.
-    label.set_xy(_label, bar_index, ta.highest(10)[1])
-    label.set_text(_label, _text)
-
-
 
 var g_av = 'AutoView Oanda Settings'
 var g_risk = 'Risk Settings'
@@ -399,32 +391,32 @@ temp_positionSize = getPositionSize(toWhole(longStopDistance) * 10)
 // Detect valid short setups & trigger alerts
 var orderInProgress = false
 ////////////////
-var tradeClose=true
 
-
-tradeDirection="Long"
 var tradeStopPricePositve = 0.00
 var pricePossition= 0.00
 
 
 dateFilter = hour(time,'GMT+1') >= i_startHour and hour(time,'GMT+1') <= i_endHour
-twoLowerCloses =  (close[2] < close[3] ) and  (close[1] < close[2]) and (close < close[1]) 
-twoUpCloses =  (close[2] < close[3]) and  (close[1] > close[2]) and (close > close[1])
-exitBuy = ta.crossover(sslExit, close) // and ssl_direction == -1
-exitSell=ta.crossover(close, sslExit)// and ssl_direction == 1///and not sell_atr  and barstate.isconfirmed 
-entryBuy=ta.crossover(close, upperk)  //and  ssl_direction == 1  // and dateFilter  and isLong) or(buySignal and ssl_direction == 1 )  )//and ssl_direction == 1 and dateFilter  and isLong//and  buy_atr 
-entrySell=ta.crossover(lowerk, close)  // and  ssl_direction == -1  // and dateFilter and isShort and twoLowerCloses ) or(sellSignal and ssl_direction == -1) )// and ssl_direction == -1 and dateFilter and isShort //and sell_atr
+twoLowerCloses =     (close[1] < close[2]) and (close < close[1]) 
+twoUpCloses =    (close[1] > close[2]) and (close > close[1])
+exitBuy = ta.crossover(sslExit, close)
+exitSell=ta.crossover(close, sslExit)
+entryBuy=ta.crossover(close, upperk) 
+entrySell=ta.crossover(lowerk, close)  
 var t_entry = 0.0
 var t_stop = 0.0
 var t_target = 0.0
 var t_direction = 0
 var t_exit = 0.0
-long = entryBuy  and dateFilter //and isLong
-short = entrySell  and dateFilter // and isShort 
+long = (entryBuy  or (buy_atr and  strategy.position_size == 0 and twoUpCloses ))  and dateFilter 
+short = (entrySell or (sell_atr and  strategy.position_size == 0 and twoLowerCloses))  and dateFilter
+exitLong= short or ( exitBuy and not buy_atr) 
+exitShort= long or (exitSell and not  sell_atr) 
 
-label.new(bar_index, high,'d:'+str.tostring(t_direction)+'|xS:'+str.tostring(exitSell)+'|xB:'+str.tostring(exitBuy)+'|EB:'+str.tostring(entryBuy)+'|ES:'+str.tostring(entrySell)+'|SC:'+str.tostring(sell_atr)+'|BC:'+str.tostring(buy_atr), color=t_direction == -1 ? color.new(color.red, 0):color.new(color.green, 0))
 
-if long
+//label.new(bar_index, high,'d:'+str.tostring(t_direction)+'|xS:'+str.tostring(exitSell)+'|xB:'+str.tostring(exitBuy)+'|EB:'+str.tostring(entryBuy)+'|ES:'+str.tostring(entrySell)+'|SC:'+str.tostring(sell_atr)+'|BC:'+str.tostring(buy_atr), color=t_direction == -1 ? color.new(color.red, 0):color.new(color.green, 0))
+
+if long 
     t_direction := 1
     tradeStopPricePositve :=0.00
     tradeStopPrice := up
@@ -451,11 +443,8 @@ if short
     alert(message=av_alert, freq=alert.freq_once_per_bar_close)
 if true
     if t_direction == 1
-        tradeDirection:="Long" 
         tradeStopPrice := up - stopStopLossErr
-       // label.new(bar_index, high,str.tostring(entryPrice) +'/'+ str.tostring(pricePossition)+'/'+ str.tostring(tradeStopPricePositve) , color=color.new(color.green, 0))
     if t_direction == -1 
-        tradeDirection:="Short"
       //  pricePossition = getProfitLoss(tradeDirection)
         tradeStopPrice := dn + stopStopLossErr 
       //  label.new(bar_index, high,str.tostring(  price < pricePossition and price != 0.00)+'/'+ str.tostring(tradeStopPrice) +'/'+ str.tostring(tradeStopPricePositve)+'/'+ str.tostring(pricePossition) , color=color.new(color.red, 0))
@@ -463,9 +452,10 @@ if true
     var av_alert = delet_alert + '\n' + 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market' + ' fsl='
     // Send alert to webhook
     alert(message=av_alert + str.tostring(tradeStopPrice), freq=alert.freq_once_per_bar_close)
-    alert(message=str.tostring(getProfitLoss(tradeDirection)) + '/'+str.tostring(entryPrice)+"*" +str.tostring(tradePositionSize), freq=alert.freq_once_per_bar_close)
-  
-
+if exitLong or exitShort
+    close_alert = 'e=' + broker + ' s=' + pair + ' c=position'
+   // Send alert to webhook
+    alert(message=close_alert, freq=alert.freq_once_per_bar_close)   
 
 plot(t_direction !=0 ? tradeStopPrice :na , title='Up Trend', style=plot.style_linebr, linewidth=2, color=t_direction == 1 ? color.new(color.green , 0) :color.new(color.red , 0) )
 
@@ -476,10 +466,8 @@ plotshape(long ? up : na, title='UpTrend Begins', location=location.absolute, st
 plotshape(long ? up : na, title='Buy', text='Buy', location=location.absolute, style=shape.labelup, size=size.tiny, color=color.new(color.green, 0), textcolor=color.new(color.white, 0))
 
 strategy.entry(id='Long', direction=strategy.long, when=long, qty=tradePositionSize ,comment='Long entre')
-strategy.exit(id='Long Exit', from_entry='Long', limit=tradeTargetPrice ,stop=tradeStopPrice,when=short or exitBuy,comment='Long exit'+str.tostring(tradeStopPrice) )
+strategy.exit(id='Long Exit', from_entry='Long', limit=tradeTargetPrice ,stop=tradeStopPrice,when=exitLong,comment='Long exit'+str.tostring(tradeStopPrice) )
 
-// Enter trades whenever a valid setup is detected
+// Enter trades whenever a valid setorderup is detected
 strategy.entry(id='short', direction=strategy.short, when=short ,qty=tradePositionSize,comment='short entre')
-strategy.exit(id='short Exit', from_entry='short',limit=tradeTargetPrice, stop=tradeStopPrice ,when=long or exitSell ,comment='short exit'+str.tostring(tradeStopPrice))
-
-
+strategy.exit(id='short Exit', from_entry='short',limit=tradeTargetPrice, stop=tradeStopPrice ,when=exitShort,comment='short exit'+str.tostring(tradeStopPrice))
