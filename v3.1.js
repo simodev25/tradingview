@@ -1,4 +1,3 @@
-
 //@version=5
 strategy('kosmosv3', overlay=true, initial_capital=1000, default_qty_value=10, default_qty_type=strategy.percent_of_equity)
 
@@ -383,7 +382,7 @@ ssl_direction = src > upperk ? 1 : src < lowerk ? -1 : 0
 /////////////:end SSL
 var tradeStopPrice = 0.0
 var tradeTargetPrice = 0.0
-
+var tradelimitPrice =0.0
 temp_positionSize = getPositionSize(toWhole(longStopDistance) * 10)
 // Detect valid short setups & trigger alerts
 var orderInProgress = false
@@ -410,10 +409,12 @@ short = (entrySell or (sell_atr and twoLowerCloses))  and dateFilter and strateg
 exitLong= short or ( exitBuy and not buy_atr) 
 exitShort= long or (exitSell and not  sell_atr) 
 
-label.new(bar_index, high,'d:'+str.tostring( strategy.position_avg_price)+'|xS:'+str.tostring(exitSell)+'|xB:'+str.tostring(exitBuy)+'|EB:'+str.tostring(entryBuy)+'|ES:'+str.tostring(entrySell)+'|SC:'+str.tostring(sell_atr)+'|BC:'+str.tostring(buy_atr), color=t_direction == -1 ? color.new(color.red, 0):color.new(color.green, 0))
+
+//label.new(bar_index, high,'d:'+str.tostring(t_direction)+'|xS:'+str.tostring(exitSell)+'|xB:'+str.tostring(exitBuy)+'|EB:'+str.tostring(entryBuy)+'|ES:'+str.tostring(entrySell)+'|SC:'+str.tostring(sell_atr)+'|BC:'+str.tostring(buy_atr), color=t_direction == -1 ? color.new(color.red, 0):color.new(color.green, 0))
 
 if long 
     t_direction := 1
+    entryPrice := close
     tradeStopPricePositve :=0.00
     tradeStopPrice := up
     tradeTargetPrice := longTargetPrice
@@ -428,7 +429,6 @@ if long
 if short
     t_direction := -1
     entryPrice := close
-    tradeStopPricePositve :=0.00
     tradeStopPrice := dn
     tradeTargetPrice := shortTargetPrice
     tradePositionSize := temp_positionSize
@@ -440,11 +440,9 @@ if short
 if true
     var delet_alert = 'e=' + broker + ' s=' + pair + ' c=order'
     if t_direction == 1
-        if low >= low[1]
-            tradeStopPrice := up - stopStopLossErr
+        tradeStopPrice := up - stopStopLossErr
     if t_direction == -1 
-        if high <= high[1]
-            tradeStopPrice := dn + stopStopLossErr 
+        tradeStopPrice := dn + stopStopLossErr 
         
     var av_alert = delet_alert + '\n' + 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market'  + ' fsl='
     // Send alert to webhook
@@ -455,7 +453,7 @@ if exitLong or exitShort
     close_alert = 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market'
    // Send alert to webhook
     alert(message=close_alert, freq=alert.freq_once_per_bar_close)   
-//plot(high, title='Up Trend', style=plot.style_linebr, linewidth=2, color=color.new(color.green , 0))
+
 plot(tradeStopPrice, title='Up Trend', style=plot.style_linebr, linewidth=2, color=t_direction == 1 ? color.new(color.green , 0) :color.new(color.red , 0) )
 
 plotshape(short ? dn : na, title='DownTrend Begins', location=location.absolute, style=shape.circle, size=size.tiny, color=color.new(color.red, 0))
@@ -465,10 +463,11 @@ plotshape(long ? up : na, title='UpTrend Begins', location=location.absolute, st
 plotshape(long ? up : na, title='Buy', text='Buy', location=location.absolute, style=shape.labelup, size=size.tiny, color=color.new(color.green, 0), textcolor=color.new(color.white, 0))
 
 strategy.entry(id='Long', direction=strategy.long, when=long, qty=tradePositionSize ,comment='Long entre')
-strategy.exit(id='Long Exit', from_entry='Long' ,stop=tradeStopPrice,comment='Long exit'+str.tostring(tradeStopPrice) )
+strategy.exit(id='Long Exit', from_entry='Long', profit=tradeTargetPrice ,stop=tradeStopPrice,when=exitLong,comment='Long exit'+str.tostring(tradeStopPrice) )
 
 // Enter trades whenever a valid setorderup is detected
 strategy.entry(id='short', direction=strategy.short, when=short ,qty=tradePositionSize,comment='short entre')
-strategy.exit(id='short Exit', from_entry='short', stop=tradeStopPrice ,comment='short exit'+str.tostring(tradeStopPrice))
+strategy.exit(id='short Exit', from_entry='short',profit=tradeTargetPrice, stop=tradeStopPrice ,when=exitShort,comment='short exit'+str.tostring(tradeStopPrice))
+
 strategy.close("short",when=exitLong)
 strategy.close("Long",when=exitShort)
