@@ -404,8 +404,8 @@ var t_stop = 0.0
 var t_target = 0.0
 var t_direction = 0
 var t_exit = 0.0
-long = (entryBuy  or (buy_atr and  strategy.position_size == 0 and twoUpCloses ))  and dateFilter 
-short = (entrySell or (sell_atr and  strategy.position_size == 0 and twoLowerCloses))  and dateFilter
+long = (entryBuy  or (buy_atr  and twoUpCloses ))  and dateFilter  and strategy.position_size <= 0
+short = (entrySell or (sell_atr and twoLowerCloses))  and dateFilter and strategy.position_size >= 0
 exitLong= short or ( exitBuy and not buy_atr) 
 exitShort= long or (exitSell and not  sell_atr) 
 
@@ -418,9 +418,9 @@ if long
     tradeStopPrice := up
     tradeTargetPrice := longTargetPrice
     tradePositionSize := temp_positionSize
-    close_alert = 'e=' + broker + ' s=' + pair + ' c=position'
+    close_alert = 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market'
     // Generate AutoView alert syntax
-    av_alert = close_alert + '\n' +  'e=' + broker + ' b=long' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)+ ' fsl=' + str.tostring(tradeTargetPrice)
+    av_alert = close_alert + '\n' +  'e=' + broker + ' b=long' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)
     // Send alert to webhook
     alert(message=av_alert, freq=alert.freq_once_per_bar_close)
 // Make a label and get its price coordinate
@@ -432,28 +432,30 @@ if short
     tradeStopPrice := dn
     tradeTargetPrice := shortTargetPrice
     tradePositionSize := temp_positionSize
-    close_alert = 'e=' + broker + ' s=' + pair + ' c=position'
+    close_alert = 'e=' + broker + ' s=' + pair + ' c=position'  + ' t=market'
     // Generate AutoView alert syntax
     av_alert = close_alert + '\n' + 'e=' + broker + ' b=short' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)
     // Send alert to webhook
     alert(message=av_alert, freq=alert.freq_once_per_bar_close)
 if true
+    var delet_alert = 'e=' + broker + ' s=' + pair + ' c=order'
     if t_direction == 1
         tradeStopPrice := up - stopStopLossErr
     if t_direction == -1 
       //  pricePossition = getProfitLoss(tradeDirection)
         tradeStopPrice := dn + stopStopLossErr 
-      //  label.new(bar_index, high,str.tostring(  price < pricePossition and price != 0.00)+'/'+ str.tostring(tradeStopPrice) +'/'+ str.tostring(tradeStopPricePositve)+'/'+ str.tostring(pricePossition) , color=color.new(color.red, 0))
-    var delet_alert = 'e=' + broker + ' s=' + pair + ' c=order'
-    var av_alert = delet_alert + '\n' + 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market' + ' fsl='
+        
+    var av_alert = delet_alert + '\n' + 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market'  + ' fsl='
     // Send alert to webhook
     alert(message=av_alert + str.tostring(tradeStopPrice), freq=alert.freq_once_per_bar_close)
+
 if exitLong or exitShort
-    close_alert = 'e=' + broker + ' s=' + pair + ' c=position'
+   // t_direction := 0
+    close_alert = 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market'
    // Send alert to webhook
     alert(message=close_alert, freq=alert.freq_once_per_bar_close)   
 
-//plot(t_direction !=0 ? tradeStopPrice :na , title='Up Trend', style=plot.style_linebr, linewidth=2, color=t_direction == 1 ? color.new(color.green , 0) :color.new(color.red , 0) )
+plot(tradeStopPrice, title='Up Trend', style=plot.style_linebr, linewidth=2, color=t_direction == 1 ? color.new(color.green , 0) :color.new(color.red , 0) )
 
 plotshape(short ? dn : na, title='DownTrend Begins', location=location.absolute, style=shape.circle, size=size.tiny, color=color.new(color.red, 0))
 plotshape(short  ? dn : na, title='Sell', text='Sell', location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.new(color.red, 0), textcolor=color.new(color.white, 0))
