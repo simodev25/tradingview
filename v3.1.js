@@ -404,8 +404,8 @@ var t_stop = 0.0
 var t_target = 0.0
 var t_direction = 0
 var t_exit = 0.0
-long = (entryBuy  or (buy_atr  and twoUpCloses ))  and dateFilter  and strategy.position_size <= 0
-short = (entrySell or (sell_atr and twoLowerCloses))  and dateFilter and strategy.position_size >= 0
+long = (entryBuy  or (buy_atr  and twoUpCloses ))  and dateFilter  and strategy.position_size ==0 // and barstate.isconfirmed
+short = (entrySell or (sell_atr and twoLowerCloses))  and dateFilter and strategy.position_size ==0//  and barstate.isconfirmed
 exitLong= short or ( exitBuy and not buy_atr) 
 exitShort= long or (exitSell and not  sell_atr) 
 
@@ -471,3 +471,9 @@ strategy.exit(id='short Exit', from_entry='short',profit=tradeTargetPrice, stop=
 
 strategy.close("short",when=exitLong)
 strategy.close("Long",when=exitShort)
+
+
+// Draw trade data
+plot(strategy.position_size != 0 or long or short ? tradeStopPrice : na, title='Trade Stop Price', color=color.new(color.red, 0), style=plot.style_linebr)
+plot(strategy.position_size != 0 or long or short ? tradeTargetPrice : na, title='Trade Target Price', color=color.new(color.green, 0), style=plot.style_linebr)
+plot(strategy.position_size != 0 or long or short ? tradePositionSize : na, color=color.new(color.orange, 0), display=display.none, title='AutoView Position Size')
