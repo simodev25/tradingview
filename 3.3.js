@@ -474,6 +474,7 @@ strategy.exit(id='short Exit', from_entry='short',limit=tradeTargetPrice, stop=t
 strategy.close("short",when=exitShort,comment='short exit'+str.tostring(exitShort))
 strategy.close("Long",when=exitLong,comment='Long exit '+str.tostring(exitLong))
 
+
 // Draw trade data
 plot(strategy.position_size != 0  ? tradeStopPrice : na, title='Trade Stop Price', color=color.new(color.red, 0), style=plot.style_linebr)
 plot(strategy.position_size != 0 ? tradeTargetPrice : na, title='Trade Target Price', color=color.new(color.green, 0), style=plot.style_linebr)
