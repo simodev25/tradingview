@@ -423,7 +423,7 @@ if long
     // Generate AutoView alert syntax
     av_alert = 'e=' + broker + ' b=long' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)+ ' ftp=' + str.tostring(tradeTargetPrice) 
     // Send alert to webhook
-    alert(message=av_alert, freq=alert.freq_once_per_bar_close)
+    alert(message=av_alert, freq=alert.freq_all)
 // Make a label and get its price coordinate
 
 if short
@@ -436,13 +436,13 @@ if short
     // Generate AutoView alert syntax
     av_alert = 'e=' + broker + ' b=short' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)+ ' ftp=' + str.tostring(tradeTargetPrice) 
     // Send alert to webhook
-    alert(message=av_alert, freq=alert.freq_once_per_bar_close)
+    alert(message=av_alert, freq=alert.freq_all)
 
 if (exitLong and strategy.position_size > 0) or (exitShort and  strategy.position_size < 0)
    // t_direction := 0
     close_alert = 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market' 
    // Send alert to webhook
-    alert(message=close_alert, freq=alert.freq_once_per_bar_close)   
+    alert(message=close_alert, freq=alert.freq_all)   
 
 //plot(tradeStopPrice, title='Up Trend', style=plot.style_linebr, linewidth=2, color=t_direction == 1 ? color.new(color.green , 0) :color.new(color.red , 0) )
 
