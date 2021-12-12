@@ -393,8 +393,8 @@ var pricePossition= 0.00
 
 
 dateFilter = hour(time,'GMT+1') >= i_startHour and hour(time,'GMT+1') <= i_endHour
-twoLowerCloses =      (close < close[1]) 
-twoUpCloses =   (close > close[1])
+twoLowerCloses =        (close < close[1]) 
+twoUpCloses = (close > close[1])
 isUpperk=  close > upperk
 islowerk= close < lowerk
 exitBuy = ta.crossover(sslExit, close)
@@ -405,8 +405,8 @@ var t_entry = 0.0
 var t_stop = 0.0
 var t_direction = 0
 var t_exit = 0.0
-long = (entryBuy  or (buy_atr  ))  and dateFilter  and strategy.position_size >=0  and barstate.isconfirmed //and isUpperk //and isLong
-short = (entrySell or (sell_atr ))  and dateFilter and strategy.position_size <=0 and barstate.isconfirmed //and islowerk // and isShort
+long = (entryBuy  or (buy_atr and twoUpCloses ))  and dateFilter  and (strategy.position_size >= 0)  and isUpperk  //and barstate.isconfirmed //and isUpperk //and isLong
+short = (entrySell or (sell_atr and twoUpCloses ))  and dateFilter and (strategy.position_size <= 0) and islowerk //and barstate.isconfirmed //and islowerk // and isShort
 exitLong= short or ( exitBuy and not buy_atr) 
 exitShort= long or (exitSell and not  sell_atr) 
 
@@ -439,7 +439,7 @@ if short
     alert(message=av_alert, freq=alert.freq_all)
 
 if (exitLong and strategy.position_size > 0) or (exitShort and  strategy.position_size < 0)
-   // t_direction := 0
+    t_direction := 0
     close_alert = 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market' 
    // Send alert to webhook
     alert(message=close_alert, freq=alert.freq_all)   
@@ -457,7 +457,7 @@ strategy.order(id='Long', direction=strategy.long, when=long, qty=tradePositionS
 strategy.exit(id='Long Exit', from_entry='Long', limit=tradeTargetPrice ,stop=tradeStopPrice,comment='Long exit:limit'+str.tostring(tradeTargetPrice)+'/'+ +str.tostring(tradeStopPrice))
 
 // Enter trades whenever a valid setorderup is detected
-strategy.order(id='short', direction=strategy.short, when=short ,qty=tradePositionSize,comment='short entre')
+strategy.order(id='short', direction=strategy.short, when=short ,qty=tradePositionSize,comment='short entre'+str.tostring(tradeStopPrice))
 strategy.exit(id='short Exit', from_entry='short',limit=tradeTargetPrice, stop=tradeStopPrice ,comment='short exit:limit'+str.tostring(tradeStopPrice))
 
 strategy.close("short",when=exitShort,comment='short exit'+str.tostring(exitShort))
