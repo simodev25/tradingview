@@ -1,11 +1,12 @@
 //@version=5
-strategy('kosmosv3', overlay=true, initial_capital=1000, default_qty_value=10, default_qty_type=strategy.percent_of_equity)
+strategy('kwkiwk', overlay=true, initial_capital=1000, default_qty_value=10, default_qty_type=strategy.percent_of_equity)
 
 var g_av = 'AutoView Oanda Settings'
 var g_risk = 'Risk Settings'
 oandaDemo = true//input.bool(title='Use Oanda Demo?', defval=false, tooltip='If turned on then oandapractice broker prefix will be used for AutoView alerts (demo account). If turned off then live account will be used', group='AutoView Oanda Settings')
 accountBalance = input.float(title='Account Balance', defval=1000.0, step=100, tooltip='Your account balance (used for calculating position size)', group=g_av)
 rr = input.float(title='Risk:Reward', defval=0.5, step=0.1, group=g_risk, tooltip='This determines the risk:reward profile of the setup')
+norder = input.int(title='max nomber order ', defval=1, step=1, group=g_risk, tooltip='This determines the risk:reward profile of the setup')
 pips = input.float(title='Stop Pips', defval=2.0, group=g_risk, tooltip='How many pips above high to put stop loss')
 riskPerTrade = input.float(title='Risk Per Trade %', defval=2.0, step=0.5, tooltip='Your risk per trade as a % of your account balance', group=g_av)
 accountCurrency = input.string(title='Account Currency', defval='USD', options=['AUD', 'CAD', 'CHF', 'EUR', 'GBP', 'JPY', 'NZD', 'USD'], tooltip='Your account balance currency (used for calculating position size)', group='AutoView Oanda Settings')
@@ -14,7 +15,7 @@ gtdOrder = 2 //input.int(title='Days To Leave Limit Order', minval=0, defval=2, 
 
 // Get Strategy Settings
 var g_strategy = 'Strategy Settings'
-stopMultiplier = input.float(title='Stop Loss ATR', defval=1.0, tooltip='Stop loss multiplier (x ATR)', group=g_strategy)
+stopMultiplier = input.float(title='Stop Loss ATR', defval=1.0,step=0.1, tooltip='Stop loss multiplier (x ATR)', group=g_strategy)
 stopStopLossErr = input.float(title='Stop Loss marge Errr', defval=0.0001, tooltip='Stop Loss marge Errr',step=0.0001, group=g_strategy)
 i_startHour         = input.int(title="Start Date Filter", defval=0, group=g_strategy, tooltip="hour begin trading from")
 i_endHour         = input.int(title="End Date Filter", defval=24, group=g_strategy, tooltip="hour stop trading")
@@ -405,44 +406,41 @@ var t_entry = 0.0
 var t_stop = 0.0
 var t_direction = 0
 var t_exit = 0.0
-long = (entryBuy  or (buy_atr and twoUpCloses ))  and dateFilter  and (strategy.position_size >= 0)  and isUpperk  //and barstate.isconfirmed //and isUpperk //and isLong
-short = (entrySell or (sell_atr and twoUpCloses ))  and dateFilter and (strategy.position_size <= 0) and islowerk //and barstate.isconfirmed //and islowerk // and isShort
+long = (entryBuy  or (buy_atr and isLong ))  and dateFilter  and strategy.position_size == 0  and isLong  and strategy.opentrades <= norder and barstate.isconfirmed //and isUpperk //and isLong
+short = (entrySell or (sell_atr and isShort ))  and dateFilter and strategy.position_size == 0 and isShort and strategy.opentrades <= norder and barstate.isconfirmed //and islowerk // and isShort
 exitLong= short or ( exitBuy and not buy_atr) 
 exitShort= long or (exitSell and not  sell_atr) 
 
 
 //label.new(bar_index, high,'d:'+str.tostring(strategy.position_size )+'|xS:'+str.tostring(exitSell)+'|xB:'+str.tostring(exitBuy)+'|EB:'+str.tostring(entryBuy)+'|ES:'+str.tostring(entrySell)+'|SC:'+str.tostring(sell_atr)+'|BC:'+str.tostring(buy_atr), color=t_direction == -1 ? color.new(color.red, 0):color.new(color.green, 0))
+label.new(strategy.position_size != 0 ?bar_index:na , high,str.tostring(strategy.opentrades), color=strategy.position_size <= 0 ? color.new(color.red, 0):color.new(color.green, 0))
 
 if long 
     t_direction := 1
     entryPrice := close
-    tradeStopPrice := longStopPrice
+    tradeStopPrice := longStopPrice 
     tradeTargetPrice := longTargetPrice
     tradePositionSize := temp_positionSize
     close_alert = 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market' + '\n' 
     // Generate AutoView alert syntax
     av_alert = 'e=' + broker + ' b=long' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)+ ' ftp=' + str.tostring(tradeTargetPrice) 
     // Send alert to webhook
-    alert(message=av_alert, freq=alert.freq_all)
+    alert(message=av_alert, freq=alert.freq_once_per_bar_close)
 // Make a label and get its price coordinate
 
 if short
     t_direction := -1
     entryPrice := close
     tradeStopPrice := shortStopPrice
-    tradeTargetPrice := shortTargetPrice
+    tradeTargetPrice := shortTargetPrice 
     tradePositionSize := temp_positionSize
     close_alert = 'e=' + broker + ' s=' + pair + ' c=position'  + ' t=market'+ '\n' 
     // Generate AutoView alert syntax
     av_alert = 'e=' + broker + ' b=short' + ' q=' + str.tostring(tradePositionSize) + ' s=' + pair + ' t=market' + ' fsl=' + str.tostring(tradeStopPrice)+ ' ftp=' + str.tostring(tradeTargetPrice) 
     // Send alert to webhook
-    alert(message=av_alert, freq=alert.freq_all)
+    alert(message=av_alert, freq=alert.freq_once_per_bar_close)
 
-if (exitLong and strategy.position_size > 0) or (exitShort and  strategy.position_size < 0)
-    t_direction := 0
-    close_alert = 'e=' + broker + ' s=' + pair + ' c=position' + ' t=market' 
-   // Send alert to webhook
-    alert(message=close_alert, freq=alert.freq_all)   
+   
 
 //plot(tradeStopPrice, title='Up Trend', style=plot.style_linebr, linewidth=2, color=t_direction == 1 ? color.new(color.green , 0) :color.new(color.red , 0) )
 
@@ -453,18 +451,19 @@ plotshape(long ? up : na, title='UpTrend Begins', location=location.absolute, st
 plotshape(long ? up : na, title='Buy', text='Buy', location=location.absolute, style=shape.labelup, size=size.tiny, color=color.new(color.green, 0), textcolor=color.new(color.white, 0))
 
 
-strategy.order(id='Long', direction=strategy.long, when=long, qty=tradePositionSize ,comment='Long entre')
-strategy.exit(id='Long Exit', from_entry='Long', limit=tradeTargetPrice ,stop=tradeStopPrice,comment='Long exit:limit'+str.tostring(tradeTargetPrice)+'/'+ +str.tostring(tradeStopPrice))
+strategy.entry(id='Long', direction=strategy.long, when=long, qty=tradePositionSize ,comment='Long entre')
+strategy.exit(id='Long Exit', from_entry='Long', limit=tradeTargetPrice ,stop=tradeStopPrice,comment='Long exit:fsl:'+str.tostring(tradeTargetPrice)+':ftp:'+ +str.tostring(tradeTargetPrice))
 
 // Enter trades whenever a valid setorderup is detected
-strategy.order(id='short', direction=strategy.short, when=short ,qty=tradePositionSize,comment='short entre'+str.tostring(tradeStopPrice))
-strategy.exit(id='short Exit', from_entry='short',limit=tradeTargetPrice, stop=tradeStopPrice ,comment='short exit:limit'+str.tostring(tradeStopPrice))
+strategy.entry(id='short', direction=strategy.short, when=short ,qty=tradePositionSize,comment='short entre'+str.tostring(tradeStopPrice))
+strategy.exit(id='short Exit', from_entry='short',limit=tradeTargetPrice, stop=tradeStopPrice ,comment='short exit:fsl:'+str.tostring(tradeStopPrice)+'ftp:'+str.tostring(tradeTargetPrice))
 
-strategy.close("short",when=exitShort,comment='short exit'+str.tostring(exitShort))
-strategy.close("Long",when=exitLong,comment='Long exit '+str.tostring(exitLong))
-
+//strategy.close("short",when=exitShort,comment='short exit'+str.tostring(exitShort))
+//strategy.close("Long",when=exitLong,comment='Long exit '+str.tostring(exitLong))
 
 // Draw trade data
-plot(strategy.position_size != 0  ? tradeStopPrice : na, title='Trade Stop Price', color=color.new(color.red, 0), style=plot.style_linebr)
-plot(strategy.position_size != 0 ? tradeTargetPrice : na, title='Trade Target Price', color=color.new(color.green, 0), style=plot.style_linebr)
-plot(strategy.position_size != 0 ? tradePositionSize : na, color=color.new(color.orange, 0), display=display.none, title='AutoView Position Size')
+plot(strategy.position_size != 0 or  long or short ? tradeStopPrice : na, title='Trade Stop Price', color=color.new(color.red, 0), style=plot.style_linebr)
+plot(strategy.position_size != 0 or  long or short? tradeTargetPrice : na, title='Trade Target Price', color=color.new(color.green, 0), style=plot.style_linebr)
+
+
+
