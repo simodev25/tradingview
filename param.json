@@ -1,0 +1,16 @@
+{
+  "ticker": "{{ticker}}",
+  "order_id": "{{strategy.order.id}}",
+  "close_price": "{{close}}",
+  "open_price": "{{open}}",
+  "high_price": "{{high}}",
+  "low_price": "{{low}}",
+  "volume": "{{volume}}",
+  "time": "{{time}}",
+  "position_size": "{{strategy.position_size}}",
+  "order_comment": "{{strategy.order.comment}}",
+  "action": "{{strategy.order.id}}",
+  "price": "{{strategy.order.price}}",
+  "units": "{{strategy.order.contracts}}",
+  "entry_price": "{{strategy.order.price}}"
+}
