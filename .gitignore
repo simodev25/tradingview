@@ -1,0 +1,9 @@
+
+__pycache__/
+
+tradingview/
+xtb_trading_bot_part_1/
+
+*.db
+
+note.txt
