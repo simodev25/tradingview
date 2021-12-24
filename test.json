@@ -1,0 +1,32 @@
+{
+  "ticker":"EURUSD",
+  "order_id":"Short",
+  "close_price":"1.09428",
+  "open_price":"1.09428",
+  "high_price":"1.09428",
+  "low_price":"1.09428",
+  "volume":"1",
+  "time":"2024-10-09T16:51:00Z",
+  "position_size":"-1",
+  "order_comment":"(ID:333685139-SL:1.0945-TP:1.094)",
+  "action":"Short",
+  "price":"1.0942800000000001",
+  "units":"1",
+  "entry_price":"1.0942800000000001"
+}
+{
+  "ticker":"EURUSD",
+  "order_id":"Long Exit",
+  "close_price":"1.09388",
+  "open_price":"1.09386",
+  "high_price":"1.09388",
+  "low_price":"1.09386",
+  "volume":"4",
+  "time":"2024-10-09T20:25:00Z",
+  "position_size":"0",
+  "order_comment":"ID:333685139",
+  "action":"Short Exit",
+  "price":"1.0938800000000002",
+  "units":"1",
+  "entry_price":"1.0938800000000002"
+}
