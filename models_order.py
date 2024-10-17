@@ -19,7 +19,11 @@ class TradeOrder(Base):
     tp = Column(Float, nullable=True)  # Take Profit
     sl = Column(Float, nullable=True)  # Stop Loss
     order_id_xtb = Column(String(20), nullable=False)
+    position_id_xtb = Column(String(20), nullable=False)
     time = Column(DateTime, nullable=False, default=datetime.utcnow)
+    status = Column(String(20), nullable=False)
+    request_status = Column(String(100), nullable=False)
+    position = Column(String(200), nullable=True)
 
     def __repr__(self):
         return f"<TradeOrder(instrument='{self.instrument}', order_id='{self.order_id}', price={self.price}, action={self.trading_type})>"
