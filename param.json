@@ -12,7 +12,8 @@
   "action": "{{strategy.order.id}}",
   "price": "{{strategy.order.price}}",
   "units": "{{strategy.order.contracts}}",
-  "entry_price": "{{strategy.order.price}}"
+  "entry_price": "{{strategy.order.price}}",
+  "interval": "{{interval}}"
 }
 
 

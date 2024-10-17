@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from xtb import XTB  # Assurez-vous que la classe XTB est dans le fichier xtb.py
 from models_order import TradeOrder, \
     Base  # Assurez-vous que TradeOrder et Base sont correctement définis dans models_order.py
+from tradingview_ta import TA_Handler, Interval
 
 status_mapping = {
     0: 'error',
@@ -18,19 +19,19 @@ status_mapping = {
 instrument_mapping = {
     "EURUSD": "EURUSD",
     "BTCUSD": "BITCOIN",
-    "BTCUSDT27Z2024": "BITCOIN"
+    "BTCUSDT27Z2024": "BITCOIN",
+    "EURAUD":"EURAUD",
+    "EURGBP":"EURGBP"
 }
 instrument_round_mapping = {
     "EURUSD": 10000,
+    "EURAUD": 10000,
+    "EURGBP": 10000,
     "BTCUSD": 10,
     "BTCUSDT27Z2024": 10,
     "BITCOIN": 10
 }
-instrument_ajoustement_mapping = {
-    "EURUSD": 10000,
-    "BTCUSD": 10,
-    "BITCOIN": 10
-}
+
 # Configuration du logging
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -57,7 +58,7 @@ class TradingService:
         Session = sessionmaker(bind=engine)
         self.session = Session()  # Initialise la session ici
 
-    def parse_order_comment(self,instrument, order_comment):
+    def parse_order_comment(self, instrument, order_comment):
         """
         Analyse le champ order_comment pour extraire SL, TP et order_id.
         """
@@ -100,12 +101,13 @@ class TradingService:
         order_comment = post_data.get("order_comment", "")
         trading_type = post_data.get("trading_type", "practice")
         time_str = post_data.get("time")
+        interval = post_data.get("interval")
         if not time_str:
             logging.error("Le temps est manquant dans les données reçues.")
             raise ValueError("Le temps est requis.")
 
         # Analyse du commentaire pour extraire SL, TP et order_id
-        sl, tp, order_id = self.parse_order_comment(instrument,order_comment)
+        sl, tp, order_id = self.parse_order_comment(instrument, order_comment)
 
         logging.info(f"Paramètres par défaut définis : instrument={instrument}, price={price}, units={units}, "
                      f"position_size={position_size}, order_comment={order_comment}, "
@@ -122,6 +124,7 @@ class TradingService:
             "sl": sl,
             "order_id": order_id,
             "time": time_str,
+            "interval": interval,
         }
 
     def translate(self, post_data):
@@ -213,7 +216,13 @@ class TradingService:
                     'status': 'closed'}
         elif action_type == 'open':
             # Procéder à l'ouverture d'un trade
-            logging.info(f"Envoi de la commande à l'API XTB : cmd={cmd}, symbol={symbol}, volume={volume}")
+            # Vérification du signal de TradingView avant de passer l'ordre
+            interval = filled_data.get('interval')+"m"
+            tradingview_signal = self.check_tradingview_signal(symbol, action_type, position_type=action,interval=interval)
+            if not tradingview_signal:
+                logging.error(f"Signal de TradingView défavorable pour {symbol}. Opération annulée.")
+                return {'status': 'Signal défavorable'}
+            logging.info(f"Signal favorable : Envoi de la commande à l'API XTB : cmd={cmd}, symbol={symbol}, volume={volume}")
             success, order_id_xtb = self.xtb_client.make_Trade(
                 symbol=symbol,
                 cmd=cmd,
@@ -354,7 +363,7 @@ class TradingService:
             raise
         return success
 
-    def check_trade(self, order_id, timeout=30, check_interval=5):
+    def check_trade(self, order_id, timeout=60, check_interval=5):
         """
         Vérifie l'état de l'ordre avec ID donné. Si le statut est 'pending',
         la méthode re-vérifie périodiquement jusqu'à ce que le statut change ou que le délai soit dépassé.
@@ -416,3 +425,33 @@ class TradingService:
             logging.exception(f"Erreur lors de la vérification de la position pour l'ordre {order_id}.")
             raise
 
+    def check_tradingview_signal(self, symbol, action_type, position_type=None, screener="forex", exchange="FX_IDC",
+                                 interval=Interval.INTERVAL_5_MINUTES):
+        logging.info(f"Obtention du signal TradingView pour le symbole : {symbol} action_type:{action_type} interval:{interval} position_type:{position_type}")
+        try:
+            handler = TA_Handler(
+                symbol=symbol,
+                screener=screener,
+                exchange=exchange,  # Correct exchange name for Forex
+                interval=interval
+            )
+            analysis = handler.get_analysis()
+            logging.info(f"Analyse TradingView : {analysis.summary}")
+            recommendation = analysis.summary['RECOMMENDATION']
+            logging.info(f"Recommandation de TradingView pour {symbol}: {recommendation}")
+
+            if action_type == 'open':
+                if (recommendation in ['BUY', 'STRONG_BUY'] and position_type == 'long') or \
+                        (recommendation in ['SELL', 'STRONG_SELL'] and position_type == 'short'):
+                    return True
+                else:
+                    return False
+            elif action_type == 'close':
+                # Autoriser toujours la fermeture de position
+                return True
+            else:
+                return False
+
+        except Exception:
+            logging.exception(f"Erreur lors de l'obtention du signal TradingView pour le symbole {symbol}.")
+            return False
