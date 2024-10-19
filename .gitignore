@@ -8,3 +8,7 @@ tradingview/
 note.txt
 
 xtb_trading_bot_part_1/
+
+
+*.db
+
