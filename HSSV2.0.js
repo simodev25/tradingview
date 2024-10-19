@@ -31,7 +31,7 @@ riskPerTrade = input.float(title="Risque par trade", defval=1.0, group=g_tester,
 drawTester = input.bool(title="Afficher le backtester", defval=true, group=g_tester, tooltip="Activer/désactiver l'affichage du backtester intégré")
 
 // Paramètres AutoView
-var string g_av = "Paramètres AutoView [OANDA]"
+var string g_av = "Paramètres AutoView "
 av_use = input.bool(title="Utiliser AutoView ?", defval=false, group=g_av, tooltip="Si activé, les alertes générées utiliseront la syntaxe AutoView pour le trading automatique")
 av_oandaDemo = input.bool(title="Utiliser Oanda Demo ?", defval=false, group=g_av, tooltip="Si activé, le préfixe du broker oandapractice sera utilisé pour les alertes AutoView (compte démo)")
 av_limitOrder = input.bool(title="Utiliser Ordre Limite ?", defval=true, group=g_av, tooltip="Si activé, AutoView utilisera des ordres limités")

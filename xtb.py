@@ -496,10 +496,58 @@ class XTB:
             print(f"Erreur lors de la récupération des positions : {trades['errorDescr']}")
             return None
 
+    def get_position(self, position_id):
+        # Préparer la requête pour obtenir toutes les positions ouvertes
+        trades_request = {
+            "command": "getTrades",
+            "arguments": {
+                "openedOnly": False  # Récupérer uniquement les trades ouverts
+            }
+        }
+
+        # Envoyer la requête
+        trades_json = json.dumps(trades_request)
+        response = self.send(trades_json)
+        trades = json.loads(response)
+        print(trades)
+        # Vérifier si la requête a réussi
+        if trades["status"] == True:
+            # Parcourir toutes les positions ouvertes pour trouver celle avec l'ID d'ordre correspondant
+            for trade in trades["returnData"]:
+                if trade["position"] == position_id:
+                    # Trouvé, retourner les détails de la position
+                    return trade
+
+            # Si l'ID d'ordre n'a pas été trouvé parmi les positions ouvertes
+            print(f"Aucune position trouvée avec l'ID d'ordre {position_id}.")
+            return None
+        else:
+            # Si la requête a échoué
+            print(f"Erreur lors de la récupération des positions : {trades['errorDescr']}")
+            return None
+    def get_today_history(self):
+        # Obtenir le temps du serveur actuel
+        server_time = self.get_ServerTime()
+
+        # Convertir le temps du serveur en format datetime
+        current_date = datetime.fromtimestamp(server_time / 1000)  # Diviser par 1000 pour convertir des millisecondes aux secondes
+
+        # Obtenir le début de la journée (minuit) en UTC
+        start_of_day = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Convertir les temps en millisecondes pour l'API XTB
+        start_timestamp = int(start_of_day.timestamp() * 1000)  # Convertir en millisecondes
+        end_timestamp = server_time  # Fin à l'heure actuelle
+
+        # Utiliser la méthode get_History avec les timestamps du début et de la fin de la journée
+        history = self.get_History(start=start_timestamp, end=end_timestamp)
+
+        return history
     def get_History(self, start=0, end=0, days=0, hours=0, minutes=0):
-        if start != 0:
+        # Vérifie si 'start' et 'end' sont déjà des timestamps (entiers)
+        if isinstance(start, str):
             start = self.time_conversion(start)
-        if end != 0:
+        if isinstance(end, str):
             end = self.time_conversion(end)
 
         if days != 0 or hours != 0 or minutes != 0:
